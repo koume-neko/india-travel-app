@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🇮🇳 インド旅行</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      min-height: 100vh;
+      background: #F5E9CE;
+      padding: 14px;
+      color: #2A1008;
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    /* ===== 更新ボタン ===== */
+    .refresh-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+    .refresh-btn {
+      background: transparent;
+      border: 1.5px solid #DD5533;
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #DD5533;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .refresh-btn:active { background: rgba(221,85,51,0.12); }
+
+    /* ===== 天気行 ===== */
+    .weather-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .weather-main {
+      flex: 1.6;
+      background: linear-gradient(135deg, #432E6F, #7050B8);
+      border-radius: 14px;
+      padding: 12px 14px;
+      color: white;
+    }
+    .weather-mini {
+      flex: 1;
+      background: linear-gradient(135deg, #BC2D29, #DD5533);
+      border-radius: 14px;
+      padding: 12px 12px;
+      color: white;
+    }
+
+    .weather-inline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.35);
+    }
+    .city-label    { font-size: 0.72rem; opacity: 1; font-weight: 700; }
+    .city-label-lg { font-size: 0.72rem; opacity: 1; font-weight: 700; }
+    .icon-lg { font-size: 1.4rem; line-height: 1; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.25)); }
+    .icon-sm { font-size: 1.3rem; line-height: 1; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.25)); }
+    .temp-lg { font-size: 1.4rem; font-weight: 800; line-height: 1; }
+    .temp-sm { font-size: 1.3rem; font-weight: 800; line-height: 1; }
+    .w-loading { font-size: 0.78rem; opacity: 0.7; padding: 4px 0; text-shadow: none; }
+
+    /* ===== 為替カード ===== */
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 4px 24px rgba(69,14,21,0.12);
+    }
+
+    .sec-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #7A4520;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    /* レートバー */
+    .rate-bar {
+      background: #FFF8EE;
+      border: 1.5px solid #FFA102;
+      border-radius: 12px;
+      padding: 11px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .rate-val  { font-size: 1.25rem; font-weight: 800; color: #432E6F; }
+    .rate-date { font-size: 0.65rem; color: #C0A880; margin-top: 1px; }
+
+    .status-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: #ccc;
+      transition: background 0.4s, box-shadow 0.4s;
+    }
+    .status-dot.live {
+      background: #FFA102;
+      box-shadow: 0 0 8px #FFA102;
+      animation: blink 2.2s infinite;
+    }
+    .status-dot.fallback { background: #DD5533; box-shadow: 0 0 7px #DD5533; }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* 換算エリア */
+    .converter { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+
+    .conv-box {
+      display: flex;
+      align-items: center;
+      background: #FDFAF5;
+      border: 2px solid #EDE0CC;
+      border-radius: 14px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .conv-box:focus-within { border-color: #FFA102; background: #FFFDF8; }
+
+    .conv-flag {
+      font-size: 1.35rem;
+      padding: 0 12px;
+      height: 54px;
+      display: flex;
+      align-items: center;
+      background: white;
+      border-right: 2px solid #EDE0CC;
+      flex-shrink: 0;
+    }
+    .conv-code {
+      font-size: 0.68rem; font-weight: 700;
+      color: #C0A070;
+      padding: 0 8px 0 10px;
+      flex-shrink: 0;
+    }
+    .conv-input {
+      flex: 1; border: none; outline: none;
+      font-size: 1.45rem; font-weight: 700;
+      color: #2A1008;
+      padding: 12px 12px 12px 0;
+      background: transparent;
+      min-width: 0;
+    }
+    .conv-input::placeholder {
+      color: #D8CFC4;
+    }
+    .conv-input::-webkit-outer-spin-button,
+    .conv-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .conv-input[type=number] { -moz-appearance: textfield; }
+
+    .swap-row { display: flex; justify-content: center; }
+    .swap-btn {
+      font-size: 1.4rem; color: #FFA102;
+      cursor: pointer; user-select: none;
+      padding: 2px 10px;
+      transition: transform 0.35s;
+    }
+    .swap-btn:active { transform: rotate(180deg); }
+
+    /* ===== お札グリッド ===== */
+    .notes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .note-wrap { cursor: pointer; transition: transform 0.15s; }
+    .note-wrap:active { transform: scale(0.96); }
+    .note-wrap svg { width: 100%; height: auto; display: block; border-radius: 10px; }
+    .note-jpy {
+      font-size: 1.05rem; font-weight: 800;
+      color: #432E6F;
+      text-align: center;
+      margin-top: 5px;
+    }
+    .note-hint { display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="refresh-row">
+    <button class="refresh-btn" onclick="loadAll()">🔄 更新する</button>
+  </div>
+
+  <!-- 天気 -->
+  <div class="weather-row">
+    <div class="weather-main" id="mumbai">
+      <div class="city-label-lg">🇮🇳 ムンバイ</div>
+      <div class="w-loading">読み込み中…</div>
+    </div>
+    <div class="weather-mini" id="tokyo">
+      <div class="city-label">🇯🇵 東京</div>
+      <div class="w-loading" style="font-size:0.75rem;">…</div>
+    </div>
+  </div>
+
+  <!-- 為替 -->
+  <div class="card">
+    <div class="sec-title">💱 現在のレート</div>
+    <div class="rate-bar">
+      <div>
+        <div class="rate-val" id="rate-val">読み込み中…</div>
+        <div class="rate-date" id="rate-date"></div>
+      </div>
+      <div class="status-dot" id="status-dot"></div>
+    </div>
+
+    <div class="sec-title">換算</div>
+    <div class="converter">
+      <div class="conv-box">
+        <div class="conv-flag">🇯🇵</div>
+        <div class="conv-code">JPY</div>
+        <input class="conv-input" id="jpy" type="number" placeholder="円を入力" min="0" oninput="fromJPY()">
+      </div>
+      <div class="swap-row">
+        <span class="swap-btn" onclick="swapValues()">⇅</span>
+      </div>
+      <div class="conv-box">
+        <div class="conv-flag">🇮🇳</div>
+        <div class="conv-code">INR</div>
+        <input class="conv-input" id="inr" type="number" placeholder="ルピーを入力" min="0" oninput="fromINR()">
+      </div>
+    </div>
+
+    <div class="sec-title">🪙 お札でかんたん換算（タップで入力）</div>
+    <div class="notes-grid" id="notes-grid">
+      <div style="color:#ddd;font-size:0.8rem;">読み込み中…</div>
+    </div>
+  </div>
+
+<script>
+  // ══════════════════════════════════════════
+  // 天気API（Open-Meteo → wttr.in の順で試す）
+  // ══════════════════════════════════════════
+  const WEATHER_SOURCES = {
+    mumbai: [
+      {
+        // ① Open-Meteo（メイン）
+        url: 'https://api.open-meteo.com/v1/forecast?latitude=19.076&longitude=72.8777' +
+             '&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,apparent_temperature' +
+             '&timezone=Asia%2FKolkata',
+        parse(d) {
+          const c = d.current;
+          const [icon, desc] = codeToInfo(c.weather_code);
+          return { temp: Math.round(c.temperature_2m), hum: c.relative_humidity_2m,
+                   wind: c.wind_speed_10m, feels: Math.round(c.apparent_temperature), icon, desc };
+        }
+      },
+      {
+        // ② wttr.in（フォールバック）
+        url: 'https://wttr.in/Mumbai?format=j1',
+        parse(d) {
+          const c = d.current_condition[0];
+          const [icon, desc] = descToInfo(c.weatherDesc[0].value);
+          return { temp: parseInt(c.temp_C), hum: parseInt(c.humidity),
+                   wind: parseInt(c.windspeedKmph), feels: parseInt(c.FeelsLikeC), icon, desc };
+        }
+      }
+    ],
+    tokyo: [
+      {
+        url: 'https://api.open-meteo.com/v1/forecast?latitude=35.6762&longitude=139.6503' +
+             '&current=temperature_2m,weather_code&timezone=Asia%2FTokyo',
+        parse(d) {
+          const c = d.current;
+          const [icon, desc] = codeToInfo(c.weather_code);
+          return { temp: Math.round(c.temperature_2m), icon, desc };
+        }
+      },
+      {
+        url: 'https://wttr.in/Tokyo?format=j1',
+        parse(d) {
+          const c = d.current_condition[0];
+          const [icon, desc] = descToInfo(c.weatherDesc[0].value);
+          return { temp: parseInt(c.temp_C), icon, desc };
+        }
+      }
+    ]
+  };
+
+  // APIが全滅した場合の季節参考値（3月）
+  const FALLBACK_WEATHER = {
+    mumbai: { temp: 33, hum: 64, wind: 17, feels: 38, icon: '☀️', desc: '快晴（参考値・3月）' },
+    tokyo:  { temp: 11, icon: '🌤️', desc: '晴れ時々くもり（参考値・3月）' }
+  };
+
+  // ── 為替API ──────────────────────────────
+  const EXCHANGE_APIS = [
+    {
+      url: 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/inr.json',
+      parse: d => ({ rate: d.inr.jpy, date: d.date })
+    },
+    {
+      url: 'https://open.er-api.com/v6/latest/INR',
+      parse: d => ({ rate: d.rates.JPY, date: (d.time_last_update_utc || '').slice(0, 10) })
+    }
+  ];
+
+  // ── お札データ ────────────────────────────────
+  const NOTES = [
+    { inr: 10,  label: '10',  bg: '#A08060', acc: '#C0A07A' }, // ブラウン/タン
+    { inr: 100, label: '100', bg: '#7870B0', acc: '#9890CC' }, // ミディアムパープル
+    { inr: 200, label: '200', bg: '#F5A840', acc: '#FFBC60' }, // アンバーオレンジ
+    { inr: 500, label: '500', bg: '#6A7040', acc: '#8A9060' }, // オリーブグリーン
+  ];
+
+  let rate = null;
+
+  // ── タイムアウト付き fetch ────────────────
+  async function tfetch(url, ms = 12000) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    try {
+      const r = await fetch(url, { signal: ctrl.signal, cache: 'no-cache' });
+      clearTimeout(timer);
+      return r;
+    } catch (e) { clearTimeout(timer); throw e; }
+  }
+
+  // ── Open-Meteo 天気コード → [絵文字, 説明] ──
+  function codeToInfo(code) {
+    if (code === 0) return ['☀️', '快晴'];
+    if (code <= 2)  return ['🌤️', '晴れ時々くもり'];
+    if (code === 3) return ['☁️', 'くもり'];
+    if (code <= 49) return ['🌫️', '霧'];
+    if (code <= 59) return ['🌦️', '小雨'];
+    if (code <= 69) return ['🌧️', '雨'];
+    if (code <= 79) return ['🌨️', '雪'];
+    if (code <= 82) return ['🌧️', 'にわか雨'];
+    if (code <= 99) return ['⛈️', '雷雨'];
+    return ['🌤️', '不明'];
+  }
+
+  // ── wttr.in 英語説明 → [絵文字, 説明] ─────
+  function descToInfo(desc) {
+    const d = (desc || '').toLowerCase();
+    if (d.includes('sunny') || d.includes('clear'))          return ['☀️', '快晴'];
+    if (d.includes('partly') || d.includes('scattered'))     return ['🌤️', '晴れ時々くもり'];
+    if (d.includes('overcast') || d.includes('cloudy'))      return ['☁️', 'くもり'];
+    if (d.includes('mist') || d.includes('fog') || d.includes('haze')) return ['🌫️', '霧・もや'];
+    if (d.includes('thunder') || d.includes('storm'))        return ['⛈️', '雷雨'];
+    if (d.includes('snow') || d.includes('sleet') || d.includes('blizzard')) return ['🌨️', '雪'];
+    if (d.includes('rain') || d.includes('drizzle') || d.includes('shower')) return ['🌧️', '雨'];
+    return ['🌤️', desc];
+  }
+
+  // ── お札 SVG 生成 ─────────────────────────
+  function noteSVG(n) {
+    const { label, bg, acc } = n;
+    let spokes = '';
+    for (let i = 0; i < 24; i++) {
+      const a = i * 15 * Math.PI / 180;
+      const cx = 130, cy = 38;
+      const x1 = (cx + 9  * Math.sin(a)).toFixed(1);
+      const y1 = (cy - 9  * Math.cos(a)).toFixed(1);
+      const x2 = (cx + 15 * Math.sin(a)).toFixed(1);
+      const y2 = (cy - 15 * Math.cos(a)).toFixed(1);
+      spokes += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="rgba(255,255,255,.5)" stroke-width=".7"/>`;
+    }
+    const fs = label.length >= 4 ? '21' : '27';
+    return `<svg viewBox="0 0 165 78" xmlns="http://www.w3.org/2000/svg">
+      <rect width="165" height="78" rx="10" fill="${bg}"/>
+      <rect x="108" width="57" height="78" fill="${acc}" opacity=".22"/>
+      <rect x="64" width="2.5" height="78" fill="rgba(255,255,255,.18)"/>
+      <text x="10" y="24" font-size="13" fill="rgba(255,255,255,.8)" font-weight="bold" font-family="Arial">₹</text>
+      <text x="10" y="55" font-size="${fs}" fill="white" font-weight="900" font-family="Arial">${label}</text>
+      <text x="10" y="70" font-size="6.5" fill="rgba(255,255,255,.45)" font-family="Arial" letter-spacing="2">INDIA</text>
+      <circle cx="130" cy="38" r="18" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.2"/>
+      <circle cx="130" cy="38" r="9"  fill="none" stroke="rgba(255,255,255,.22)" stroke-width=".7"/>
+      ${spokes}
+      <circle cx="130" cy="38" r="3" fill="rgba(255,255,255,.5)"/>
+      <text x="152" y="15" font-size="7.5" fill="rgba(255,255,255,.4)" font-family="Arial" text-anchor="end">₹${label}</text>
+    </svg>`;
+  }
+
+  // ══════════════════════════════════════════
+  // 天気読み込み（共通ロジック）
+  // ══════════════════════════════════════════
+  async function loadWeather(city) {
+    const sources = WEATHER_SOURCES[city];
+    for (const src of sources) {
+      try {
+        const r = await tfetch(src.url, 12000);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const json = await r.json();
+        return src.parse(json);          // 成功
+      } catch (e) {
+        console.warn(`[${city}] ${src.url} 失敗:`, e.message);
+        // 次のAPIを試す
+      }
+    }
+    // 全API失敗 → 参考値
+    console.warn(`[${city}] 全API失敗。参考値を使用します。`);
+    return { ...FALLBACK_WEATHER[city], fallback: true };
+  }
+
+  // ── ムンバイ表示（横並び）────────────────
+  async function loadMumbai() {
+    const el = document.getElementById('mumbai');
+    const w = await loadWeather('mumbai');
+    const ref = w.fallback ? '<span style="font-size:.6rem;opacity:.4;margin-left:2px">参考</span>' : '';
+    el.innerHTML = `<div class="weather-inline">
+      <span class="city-label-lg">🇮🇳 ムンバイ${ref}</span>
+      <span class="icon-lg">${w.icon}</span>
+      <span class="temp-lg">${w.temp}°</span>
+    </div>`;
+  }
+
+  // ── 東京表示（横並び）──────────────────────
+  async function loadTokyo() {
+    const el = document.getElementById('tokyo');
+    const w = await loadWeather('tokyo');
+    const ref = w.fallback ? '<span style="font-size:.55rem;opacity:.4;margin-left:2px">参考</span>' : '';
+    el.innerHTML = `<div class="weather-inline">
+      <span class="city-label">🇯🇵 東京${ref}</span>
+      <span class="icon-sm">${w.icon}</span>
+      <span class="temp-sm">${w.temp}°</span>
+    </div>`;
+  }
+
+  // ── 為替レート ────────────────────────────
+  async function loadRate() {
+    const dot = document.getElementById('status-dot');
+    for (const api of EXCHANGE_APIS) {
+      try {
+        const r = await tfetch(api.url, 10000);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const data = await r.json();
+        const { rate: r2, date } = api.parse(data);
+        if (!r2 || isNaN(r2)) throw new Error('invalid rate');
+        rate = r2;
+        document.getElementById('rate-val').textContent  = `100円 ＝ ${(100 / rate).toFixed(2)} INR`;
+        document.getElementById('rate-date').textContent = `更新: ${date}`;
+        dot.className = 'status-dot live';
+        buildNotes();
+        return;
+      } catch (e) { console.warn('為替API失敗:', e.message); }
+    }
+    rate = 1.80;
+    document.getElementById('rate-val').textContent  = `100円 ≈ ${(100 / rate).toFixed(2)} INR（概算）`;
+    document.getElementById('rate-date').textContent = '※ オフライン概算値';
+    dot.className = 'status-dot fallback';
+    buildNotes();
+  }
+
+  // ── お札グリッド ──────────────────────────
+  function buildNotes() {
+    if (!rate) return;
+    document.getElementById('notes-grid').innerHTML = NOTES.map(n => {
+      const jpy = Math.round(n.inr * rate);
+      return `<div class="note-wrap" onclick="tapNote(${n.inr})">
+        ${noteSVG(n)}
+        <div class="note-jpy">≈ ¥${jpy.toLocaleString()}</div>
+        <div class="note-hint">タップで換算</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── 換算ロジック ──────────────────────────
+  function fromJPY() {
+    if (!rate) return;
+    const v = parseFloat(document.getElementById('jpy').value);
+    document.getElementById('inr').value = isNaN(v) ? '' : (v / rate).toFixed(2);
+  }
+  function fromINR() {
+    if (!rate) return;
+    const v = parseFloat(document.getElementById('inr').value);
+    document.getElementById('jpy').value = isNaN(v) ? '' : (v * rate).toFixed(2);
+  }
+  function tapNote(inrAmt) {
+    const inrEl = document.getElementById('inr');
+    const current = parseFloat(inrEl.value) || 0;
+    inrEl.value = current + inrAmt;
+    fromINR();
+    inrEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  function swapValues() {
+    const j = document.getElementById('jpy');
+    const i = document.getElementById('inr');
+    const tmp = j.value;
+    j.value = i.value;
+    i.value = tmp;
+    // スワップ後はJPY側を基準に再計算
+    fromJPY();
+  }
+
+  // ── 全更新 ────────────────────────────────
+  function loadAll() {
+    loadMumbai();
+    loadTokyo();
+    loadRate();
+  }
+
+  loadAll();
+</script>
+</body>
+</html>
